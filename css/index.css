@@ -1,0 +1,55 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+h2 {
+    text-align: center;
+    margin-top: 80px;
+
+}
+
+#canvas {
+    display: none;
+}
+
+#game {
+    max-width: 800px;
+    margin: 0 auto;
+    margin-top: 10px;
+}
+
+#game img {
+    width: 99%;
+}
+
+#game > div {
+    width: 33%;
+    float: left;
+}
+
+.hint {
+    width:100%;
+    height: 100%;
+    position: fixed;
+    top:0 ;
+    background-color: #3C3C3C;
+    opacity: .8;
+    text-align: center;
+    z-index: 999;
+    color: white;
+}
+.hint>div{
+    font-size: 20px;
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    margin-left: -100px;
+}
+.hint p{
+    margin: 5px 0;
+}
+.hide{
+    display: none;
+}
+
