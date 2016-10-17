@@ -1,128 +1,153 @@
-var image = new Image();
+/**
+ * @author beidan
+ * @description 拼图小游戏
+ */
+;(function () {
+    function Puzzle() {
+        this.canvas = document.getElementById('canvas');
+        this.context = this.canvas.getContext('2d');
 
-image.src = 'img/shulan.jpg';
-
-image.onload = function () {
-    randomImg();
-    renderImg(image);
-    drag();
-};
-
-//获取canvas的context对象
-var canvas = document.getElementById('canvas'),
-    context = canvas.getContext('2d');
-
-//获取数组列表,将类数组变成数组
-var imgLikeArr = document.querySelectorAll('img');
-var imgArr = Array.prototype.slice.call(imgLikeArr);
-var divContext = document.querySelectorAll('#game div');
-
-//利用canvas切出小块图片
-function renderImg(image) {
-    var index = 0;
-    for (var i = 0; i < 3; i++) {
-        for (var j = 0; j < 3; j++) {
-            context.drawImage(image, 300 * j, 300 * i, 300, 600, 0, 0, 300, 300);
-            imgArr[index].src = canvas.toDataURL('image/jpeg');
-            imgArr[index].id = index;
-            index++;
-        }
+        this.imgLikeArr = document.querySelectorAll('img');
+        this.imgArr = Array.prototype.slice.call(this.imgLikeArr);
     }
-}
 
-//实现小块图片的随机排序
-function randomImg() {
-    imgArr.sort(function (a, b) {
-        return Math.random() - Math.random();
-    });
-}
+    Puzzle.prototype = {
+        init: function (url) {
+            var image = new Image(), self = this;
+            image.src = url;
 
-//拖拽效果
-function drag() {
-    var i, len = imgArr.length;
-    for (i = 0; i < len; i++) {
-        var cache;
-        imgArr[i].ondragstart = function (ev) {
-            cache = ev.target.id;
-        };
-        if (!!divContext[i]) {
-            divContext[i].ondrop = function (ev) {
-                ev.preventDefault();
-                var originObj = document.getElementById(cache);
-                var origin = {
-                    'src': originObj.src,
-                    'id': originObj.id
-                };
-                var endObj = ev.target;
-                if(ev.target.querySelector('img')){
-                    endObj = ev.target.querySelector('img');
-                }
-
-                var end = {
-                    'src': endObj.src,
-                    'id': endObj.id
-                }
-                originObj.src = end.src;
-                originObj.id = end.id;
-
-                endObj.src = origin.src;
-                endObj.id = origin.id;
-                if (origin.id != end.id) {
-                    changestep();
-                }
-                isSuccess();
-
+            image.onload = function () {
+                self.randomImg();
+                self.renderImg(image);
+                self.dragEvent();
             };
-            divContext[i].ondragover = function (ev) {
+        },
+
+        //canvas绘制图片
+        renderImg: function (image) {
+            var index = 0;
+            for (var i = 0; i < 3; i++) {
+                for (var j = 0; j < 3; j++) {
+                    this.context.drawImage(image, 300 * j, 300 * i, 300, 600, 0, 0, 300, 300);
+                    this.imgArr[index].src = this.canvas.toDataURL('image/jpeg');
+                    this.imgArr[index].id = index;
+                    index++;
+                }
+            }
+        },
+        //监听事件
+        dragEvent: function () {
+            var contain = document.getElementById('game'),
+                next = document.getElementById('next'),
+                self = this;
+
+            //监听dragstart设置拖拽数据
+            on(contain, 'dragstart', function (e) {
+                var target = getTarget(e);
+
+                if (target.tagName.toLowerCase() == "img") {
+                    e.dataTransfer.setData('id', e.target.id);
+                }
+            });
+
+            on(contain, 'drop', function (ev) {
+                var target = getTarget(ev);
+
+                if (target.tagName.toLowerCase() == "img") {
+                    var originObj = document.getElementById(ev.dataTransfer.getData('id'));
+                    var cache = {
+                        'src': originObj.src,
+                        'id': originObj.id
+                    };
+                    var endObj = ev.target.querySelector('img') || ev.target;
+
+                    originObj.src = endObj.src;
+                    originObj.id = endObj.id;
+                    endObj.src = cache.src;
+                    endObj.id = cache.id;
+
+                    if (originObj.id != endObj.id) {
+                        self.changestep();
+                    }
+
+                    self.isSuccess();
+                }
+            });
+
+            //取消浏览器默认行为使元素可拖放.
+            on(contain, 'dragover', function (ev) {
                 ev.preventDefault();
-            };
+            });
 
-        }
-    }
-}
+            on(next, 'click', function (ev) {
+                self.init('img/test.jpg');
+                self.showtip();
+                document.getElementById('step').innerText = 0;
+            });
 
-//遮罩层
-function showtip() {
-    var hint = document.querySelector('.hint');
-    hint.classList.toggle('hide');
-}
-
+        },
+        //实现小块图片的随机排序
+        randomImg: function () {
+            this.imgArr.sort(function () {
+                return Math.random() - Math.random();
+            });
+        },
+        //遮罩层
+        showtip: function () {
+            var hint = document.querySelector('.hint');
+            hint.classList.toggle('hide');
+        },
 //改变步数
-function changestep() {
-    var step = document.getElementById('step');
-    step.innerText = +step.innerText + 1;
-}
-
+        changestep: function () {
+            var step = document.getElementById('step');
+            step.innerText = +step.innerText + 1;
+        },
 //判断游戏是否完成
-function isSuccess() {
-    var imgLikeArr = document.querySelectorAll('img');
-    var imgArr = Array.prototype.slice.call(imgLikeArr);
-    var len = imgArr.length, i = 0;
+        isSuccess: function () {
+            var imgLikeArr = document.querySelectorAll('img'),
+                imgArr = Array.prototype.slice.call(imgLikeArr),
+                len = imgArr.length, i,
+                flag = true, self = this;
 
-    while (i < len) {
-        var idx = imgArr[i].id;
-        if (i == idx) {
-            i++;
+            for (i = 0; i < len; i++) {
+                if (imgArr[i].id != i) {
+                    flag = false;
+                }
+            }
+
+            if (flag) {
+                setTimeout(function () {
+                    self.showtip();
+                }, 200);
+            }
+        }
+    };
+
+    //事件代理
+    function on(ele, type, handler) {
+        if (ele.addEventListener) {
+            return ele.addEventListener(type, handler, false);
+        } else if (ele.attachEvent) {
+            return ele.attachEvent('on' + type, function () {
+                handler.call(ele);
+            });
         } else {
-            break;
+            return ele['on' + type] = handler;
         }
     }
-    if (i >= len) {
-        setTimeout(function () {
-            showtip();
-        }, 200);
+
+    function getTarget(e) {
+        var getEvent = e || window.event;
+        return getEvent.target || getEvent.srcElement;
     }
-}
 
 
-document.getElementById('next').onclick = function (e) {
-    var image1 = new Image();
-    image1.src = 'img/test.jpg';
-    image1.onload = function () {
-        randomImg();
-        renderImg(image1);
-        drag();
-    };
-    showtip();
-    document.getElementById('step').innerText = 0;
-}
+//调用
+    var puzzle = new Puzzle();
+    puzzle.init('img/shulan.jpg');
+
+})();
+
+
+
+
